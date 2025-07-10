@@ -249,7 +249,7 @@ st.sidebar.header("Configurações da Análise")
 arquivo_carregado = st.sidebar.file_uploader("Escolha um arquivo CSV", type="csv")
 if arquivo_carregado is not None:
     try:
-        df_original = pd.read_csv(arquivo_carregado, chunksize = 100000)
+        df_original = pd.read_csv(arquivo_carregado)
         if 'body' not in df_original.columns:
             st.error("O arquivo deve conter a coluna 'body' com os textos")
         else:
