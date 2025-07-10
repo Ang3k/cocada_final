@@ -5,3 +5,5 @@ matplotlib
 scikit-learn
 seaborn
 plotly
+pyarrow
+openpyxl
