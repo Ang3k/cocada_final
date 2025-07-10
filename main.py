@@ -18,6 +18,7 @@ import tempfile
 import os
 from io import BytesIO
 import base64
+import gc
 
 # Configuração da página
 st.set_page_config(
@@ -27,6 +28,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+@st.cache_data
 def preprocessar_texto(texto):
     """Limpa e preprocessa o texto"""
     if pd.isna(texto):
@@ -487,6 +489,7 @@ if 'df_original' in st.session_state:
 
                             # Fechar a figura para liberar memória
                             plt.close(fig_anim)
+                            gc.collect()
 
                         except Exception as e:
                             st.error(f"Erro ao gerar animação: {str(e)}")
