@@ -18,19 +18,16 @@ import tempfile
 import os
 from io import BytesIO
 import base64
-import gc
 
 # Configuração da página
 st.set_page_config(
     page_title="Reddit Clustering Analysis",
-    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-@st.cache_data
 def preprocessar_texto(texto):
-    """Limpa e preprocessa o texto"""
+    # Limpa e preprocessa o texto
     if pd.isna(texto):
         return ""
 
@@ -42,8 +39,7 @@ def preprocessar_texto(texto):
 
 
 class KMeansAnimado:
-    """Classe KMeans com capacidade de gerar animações"""
-
+    # Classe KMeans com capacidade de gerar animações
     def __init__(self, n_clusters=3, max_iter=300, random_state=42):
         self.n_clusters = n_clusters
         self.max_iter = max_iter
@@ -54,7 +50,7 @@ class KMeansAnimado:
         self.X_data = None
 
     def fit(self, X):
-        """Treina o modelo e coleta histórico para animação"""
+        # Treina o modelo e coleta histórico para animação
         self.X_data = X.copy()
 
         # Inicialização dos centroides
@@ -87,11 +83,11 @@ class KMeansAnimado:
         return self
 
     def predict(self, X):
-        """Predição usando o modelo do scikit-learn"""
+        # Predição usando o modelo do scikit-learn
         return self.kmeans.predict(X)
 
     def gerar_animacao(self, figsize=(12, 8), cores_vibrantes=None):
-        """Gera animação do processo de clustering"""
+        # Gera animação do processo de clustering
         if cores_vibrantes is None:
             cores_vibrantes = ['#FF0000', '#0000FF', '#00FF00', '#FFFF00', '#FF00FF', '#00FFFF', '#FF8000']
 
@@ -120,9 +116,7 @@ class KMeansAnimado:
             for k in range(self.n_clusters):
                 mask = labels == k
                 if np.sum(mask) > 0:
-                    ax.scatter(self.X_data[mask, 0], self.X_data[mask, 1],
-                               c=cores_vibrantes[k % len(cores_vibrantes)], s=80, alpha=0.7,
-                               label=f'Cluster {k}', edgecolors='black', linewidth=0.5)
+                    ax.scatter(self.X_data[mask, 0], self.X_data[mask, 1], c=cores_vibrantes[k % len(cores_vibrantes)], s=80, alpha=0.7, label=f'Cluster {k}', edgecolors='black', linewidth=0.5)
 
             # Plotar centroides
             if frame < len(self.historico_centroides):
@@ -132,8 +126,7 @@ class KMeansAnimado:
                                c='black', s=300, marker='X',
                                edgecolors='white', linewidth=2)
 
-            ax.set_title(f'K-Means Clustering - Iteração {frame}',
-                         fontsize=16, fontweight='bold', color='darkblue')
+            ax.set_title(f'K-Means Clustering - Iteração {frame}', fontsize=16, fontweight='bold', color='darkblue')
             ax.set_xlabel('Primeiro Componente Principal', fontsize=12, fontweight='bold')
             ax.set_ylabel('Segundo Componente Principal', fontsize=12, fontweight='bold')
             ax.grid(True, alpha=0.3)
@@ -153,7 +146,7 @@ class KMeansAnimado:
 
 @st.cache_data
 def processar_clustering_sklearn(df, n_clusters, n_componentes, max_features):
-    """Aplica clustering nos textos do Reddit usando scikit-learn"""
+    # Aplica clustering nos textos do Reddit usando scikit-learn
 
     # Criar uma cópia explícita para evitar warnings
     df_processed = df.copy()
@@ -163,13 +156,7 @@ def processar_clustering_sklearn(df, n_clusters, n_componentes, max_features):
     df_processed = df_processed[df_processed['body_clean'].str.len() > 0].copy()
 
     # Vetorização TF-IDF
-    vectorizer = TfidfVectorizer(
-        max_features=max_features,
-        stop_words='english',
-        ngram_range=(1, 2),
-        min_df=2,
-        max_df=0.8
-    )
+    vectorizer = TfidfVectorizer(max_features=max_features, stop_words='english', ngram_range=(1, 2), min_df=2, max_df=0.8)
 
     X_tfidf = vectorizer.fit_transform(df_processed['body_clean'])
     X_dense = X_tfidf.toarray()
@@ -210,14 +197,14 @@ def processar_clustering_sklearn(df, n_clusters, n_componentes, max_features):
             clusters_info[cluster_id] = {
                 'palavras_chave': top_words,
                 'n_documentos': mask.sum(),
-                'exemplos': df_processed.loc[df_processed['cluster'] == cluster_id, 'body_clean'].head(3).tolist()
+                'exemplos': df_processed.loc[df_processed['cluster'] == cluster_id, 'body_clean'].head(10).tolist()
             }
 
     return df_processed, X_pca, pca, kmeans_final, kmeans_animado, clusters_info, X_tfidf, vectorizer
 
 
 def salvar_animacao_gif(animacao, filename='animacao_kmeans.gif'):
-    """Salva a animação como GIF e retorna os bytes"""
+    # Salva a animação como GIF e retorna os bytes
     try:
         # Criar um arquivo temporário
         with tempfile.NamedTemporaryFile(delete=False, suffix='.gif') as tmp_file:
@@ -299,7 +286,7 @@ if 'df_original' in st.session_state:
     # Parâmetros da análise
     st.sidebar.subheader("Parâmetros dos Modelos")
     n_componentes_pca = st.sidebar.selectbox("Número de Componentes PCA", [2, 3], index=0)
-    n_clusters = st.sidebar.slider("Número de Clusters K-Means", 2, 7, 3)
+    n_clusters = st.sidebar.slider("Número de Clusters K-Means", 2, 25, 3)
     max_features = st.sidebar.slider("Máximo de Features TF-IDF", 500, 3000, 1000, step=100)
 
     if st.button("Executar Análise"):
@@ -350,6 +337,57 @@ if 'df_original' in st.session_state:
                 st.write("**Variância explicada por componente:**")
                 for i, var_ratio in enumerate(pca.explained_variance_ratio_):
                     st.write(f"PC{i + 1}: {var_ratio:.2%}")
+
+                # Visualização da matriz PCA
+                st.write("**Amostra da Matriz PCA (primeiros 10 documentos):**")
+                df_pca_sample = pd.DataFrame(
+                    X_pca[:10, :],
+                    columns=[f'PC{i + 1}' for i in range(n_componentes_pca)],
+                    index=[f"Doc {i + 1}" for i in range(10)]
+                )
+                st.dataframe(df_pca_sample.round(4))
+
+                # Gráfico dos pontos após PCA (antes do K-means)
+                st.write("**Visualização dos pontos após PCA (antes do K-means):**")
+
+                # Preparar dados para visualização
+                df_pca_viz = pd.DataFrame(X_pca, columns=[f'PC{i + 1}' for i in range(n_componentes_pca)])
+
+                if n_componentes_pca == 2:
+                    # Gráfico 2D dos pontos após PCA
+                    fig_pca = px.scatter(
+                        df_pca_viz,
+                        x='PC1',
+                        y='PC2',
+                        title='Pontos após PCA (antes do K-means)',
+                        hover_data={'PC1': ':.3f', 'PC2': ':.3f'}
+                    )
+
+                    fig_pca.update_traces(
+                        marker=dict(size=8, color='darkblue', line=dict(width=1, color='white'))
+                    )
+
+                    fig_pca.update_layout(
+                        height=500,
+                        title_font_size=16,
+                        xaxis_title='Primeira Componente Principal',
+                        yaxis_title='Segunda Componente Principal'
+                    )
+
+                    st.plotly_chart(fig_pca, use_container_width=True)
+
+                elif n_componentes_pca == 3:
+                    # Gráfico 3D dos pontos após PCA
+                    fig_pca_3d = px.scatter_3d(
+                        df_pca_viz,
+                        x='PC1',
+                        y='PC2',
+                        z='PC3',
+                        title='Pontos após PCA (antes do K-means) - 3D'
+                    )
+                    fig_pca_3d.update_traces(marker=dict(size=8, color='darkblue', line=dict(width=1, color='black')))
+                    fig_pca_3d.update_layout(height=600)
+                    st.plotly_chart(fig_pca_3d, use_container_width=True)
 
                 st.header("5. Visualização dos Clusters")
 
@@ -489,13 +527,67 @@ if 'df_original' in st.session_state:
 
                             # Fechar a figura para liberar memória
                             plt.close(fig_anim)
-                            gc.collect()
 
                         except Exception as e:
                             st.error(f"Erro ao gerar animação: {str(e)}")
                             st.write("Detalhes do erro:", str(e))
                 else:
                     st.info("A animação K-Means está disponível apenas para análises com 2 componentes principais.")
+
+                st.header("9. Download de Dados Filtrados")
+
+                # Filtrar clusters com pelo menos 2% de permanência
+                threshold_percentual = 2.0
+                total_documentos = len(df_result)
+
+                # Identificar clusters válidos (com pelo menos 2% dos documentos)
+                clusters_validos = []
+                clusters_removidos = []
+
+                for cluster_id in range(n_clusters):
+                    n_docs = clusters_info[cluster_id]['n_documentos']
+                    percentual = (n_docs / total_documentos) * 100
+
+                    if percentual >= threshold_percentual:
+                        clusters_validos.append(cluster_id)
+                    else:
+                        clusters_removidos.append(cluster_id)
+
+                # Criar DataFrame filtrado
+                df_filtrado = df_result[df_result['cluster'].isin(clusters_validos)].copy()
+
+                # Mostrar estatísticas do filtro
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Documentos Original", total_documentos)
+                with col2:
+                    st.metric("Documentos Filtrados", len(df_filtrado))
+                with col3:
+                    st.metric("Clusters Removidos", len(clusters_removidos))
+
+                if clusters_removidos:
+                    st.info(f"Clusters removidos (< {threshold_percentual}%): {clusters_removidos}")
+                else:
+                    st.success("Nenhum cluster foi removido - todos têm pelo menos 2% dos documentos")
+
+                # Botão de download
+                if len(df_filtrado) > 0:
+                    # Converter DataFrame para CSV
+                    csv_filtrado = df_filtrado.to_csv(index=False)
+
+                    st.download_button(
+                        label="📥 Baixar CSV Filtrado (sem clusters < 2%)",
+                        data=csv_filtrado,
+                        file_name="reddit_clustering_filtrado.csv",
+                        mime="text/csv",
+                        help="Baixar arquivo CSV com apenas os clusters que têm pelo menos 2% dos documentos"
+                    )
+
+                    # Mostrar preview do DataFrame filtrado
+                    st.write("**Preview do DataFrame filtrado:**")
+                    st.dataframe(df_filtrado.head(10), use_container_width=True)
+                else:
+                    st.warning("Nenhum cluster atende ao critério de 2% mínimo")
 
                 st.success("Análise concluída com sucesso!")
 
